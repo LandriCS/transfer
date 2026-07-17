@@ -1,0 +1,68 @@
+// PortalViews.swift
+// Executive portal stub — expands into its own file when built out
+// Foreman:        ForemanPortalView.swift
+// Project Manager: ProjectManagerPortalView.swift
+ 
+import SwiftUI
+ 
+// MARK: - Shared shell (used by Executive stub)
+ 
+private struct PortalShell<Content: View>: View {
+    let title: String
+    let badge: String
+    let icon: String
+    @ViewBuilder let content: () -> Content
+ 
+    let customOrange = Color(red: 178/255, green: 83/255, blue: 12/255)
+ 
+    var body: some View {
+        ZStack {
+            Color(UIColor.systemGray6).ignoresSafeArea()
+            VStack(spacing: 0) {
+                HStack(spacing: 10) {
+                    Image(systemName: icon)
+                        .font(.system(size: 20))
+                        .foregroundColor(customOrange)
+                    Text(title)
+                        .font(.system(size: 22, weight: .bold))
+                    Text(badge)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(.gray)
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .overlay(RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.gray.opacity(0.35), lineWidth: 1))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+                .background(Color.white)
+                .overlay(Divider(), alignment: .bottom)
+                content()
+            }
+        }
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+ 
+// MARK: - Executive Portal (stub)
+ 
+struct ExecutivePortalView: View {
+    var body: some View {
+        PortalShell(title: "Executive", badge: "MANAGEMENT", icon: "square.grid.2x2") {
+            VStack(spacing: 16) {
+                Spacer()
+                Image(systemName: "hammer.circle")
+                    .font(.system(size: 52)).foregroundColor(.gray.opacity(0.35))
+                Text("Executive portal")
+                    .font(.title3).fontWeight(.semibold)
+                Text("This section is under construction.\nAdd your views here.")
+                    .font(.subheadline).foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+ 
+#Preview("Executive") { NavigationStack { ExecutivePortalView() } }
