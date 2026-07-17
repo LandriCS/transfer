@@ -1,0 +1,182 @@
+// SignInView.swift
+// Sign-in screen — first screen users see in the auth flow
+ 
+import SwiftUI
+ 
+struct SignInView: View {
+    @EnvironmentObject var appState: AppState
+ 
+    @State private var email = ""
+    @State private var password = ""
+    @State private var showError = false
+ 
+    let customOrange = Color(red: 178/255, green: 83/255, blue: 12/255)
+ 
+    var body: some View {
+        ZStack {
+            Color(UIColor.systemGray6)
+                .ignoresSafeArea()
+ 
+            VStack(spacing: 0) {
+ 
+                // Logo bar — sits above the card
+                HStack {
+                    Image(systemName: "cube.fill") // Replace with your actual logo asset
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 22, height: 22)
+                        .foregroundColor(customOrange)
+                    Text("TotalSite")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.black)
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 20)
+ 
+                Spacer()
+ 
+                // Card
+                VStack(alignment: .leading, spacing: 20) {
+ 
+                    // Header
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Please enter your details")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                        Text("Welcome back")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .foregroundColor(.black)
+                    }
+ 
+                    // Input fields
+                    VStack(spacing: 14) {
+                        TextField("Email address", text: $email)
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.gray.opacity(0.25), lineWidth: 1)
+                            )
+                            .textInputAutocapitalization(.never)
+                            .disableAutocorrection(true)
+                            .keyboardType(.emailAddress)
+ 
+                        SecureField("Password", text: $password)
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.gray.opacity(0.25), lineWidth: 1)
+                            )
+                    }
+ 
+                    // Error message
+                    if showError {
+                        Text("Invalid email or password. Please try again.")
+                            .font(.footnote)
+                            .foregroundColor(.red)
+                    }
+ 
+                    // Forgot password — NavigationLink push
+                    HStack {
+                        Spacer()
+                        NavigationLink(destination: ForgotPasswordView()) {
+                            Text("Forgot password")
+                                .font(.footnote)
+                                .foregroundColor(customOrange)
+                                .fontWeight(.medium)
+                        }
+                    }
+ 
+                    // Sign in button
+                    Button(action: handleSignIn) {
+                        Text("Sign in")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(customOrange)
+                            .cornerRadius(8)
+                    }
+ 
+                    // Sign in with Google
+                    Button(action: handleGoogleSignIn) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "g.circle.fill")
+                                .resizable()
+                                .renderingMode(.template)
+                                .foregroundColor(.red)
+                                .frame(width: 20, height: 20)
+                            Text("Sign in with Google")
+                                .font(.headline)
+                                .foregroundColor(.black)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.25), lineWidth: 1)
+                        )
+                    }
+ 
+                    // Don't have an account — NavigationLink push
+                    HStack(spacing: 4) {
+                        Spacer()
+                        Text("Don't have an account?")
+                            .font(.footnote)
+                            .foregroundColor(.gray)
+                        NavigationLink(destination: SignUpView()) {
+                            Text("Sign up")
+                                .font(.footnote)
+                                .foregroundColor(customOrange)
+                                .fontWeight(.semibold)
+                        }
+                        Spacer()
+                    }
+                    .padding(.top, 4)
+                }
+                .padding(28)
+                .background(Color.white)
+                .cornerRadius(16)
+                .shadow(color: Color.black.opacity(0.07), radius: 12, x: 0, y: 4)
+                .padding(.horizontal, 24)
+                .frame(maxWidth: 480)
+ 
+                Spacer()
+            }
+        }
+        .navigationBarHidden(true) // Hide nav bar on the sign-in root screen
+    }
+ 
+    // MARK: - Actions
+ 
+    private func handleSignIn() {
+        // Validate inputs before calling your auth service
+        guard !email.isEmpty, !password.isEmpty else {
+            showError = true
+            return
+        }
+        showError = false
+        // TODO: Replace with real auth call
+        // On success, pass the real display name from your auth response:
+        appState.signIn(email: email, name: "John Smith") // ← swap for real name from API
+    }
+ 
+    private func handleGoogleSignIn() {
+        // TODO: Integrate Google Sign-In SDK
+        // On success, call appState.signIn(email: googleEmail)
+    }
+}
+ 
+#Preview {
+    NavigationStack {
+        SignInView()
+            .environmentObject(AppState())
+    }
+}
