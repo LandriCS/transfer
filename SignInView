@@ -1,0 +1,147 @@
+// SignInView.swift file 
+// This file is intended to be the sign-in page for the iOS that the user is met with immediately upon opening the app
+// 
+
+import SwiftUI
+
+struct SignInView: View {
+    @State private var email = ""
+    @State private var password = ""
+    
+    let customOrange = Color(red: 178/255, green: 83/255, blue: 12/255)
+
+    var body: some View {
+        ZStack {
+            // White background covering the safe areas
+            Color.white
+                .ignoresSafeArea()
+            
+            VStack(alignment: .leading, spacing: 24) {
+                HStack {
+                    Image(systemName: "cube.fill") //Placeholder for TotalSite logo
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(customOrange)
+                    Text("TotalSite")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.black)
+                }
+                .padding(.bottom, 40)
+                
+                // Header text
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Please enter your details:")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                    
+                    Text("Welcome back")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(.black)
+                }
+                
+                // Input Fields
+                VStack(spacing: 16) {
+                    TextField("Email address", text: $email)
+                        .padding()
+                        .background(Color.white)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                        .textInputAutocapitalization(.never)
+                        .disableAutocorrection(true)
+                    
+                    SecureField("Password", text: $password)
+                        .padding()
+                        .background(Color.white)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                }
+                
+                // Forgot Password Link
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        // Handle forgot password action here
+                    }) {
+                        Text("Forgot password")
+                            .font(.footnote)
+                            .foregroundColor(customOrange)
+                            .fontWeight(.medium)
+                    }
+                }
+                
+                // Sign Up Primary Button
+                Button(action: {
+                    // Handle sign-in / sign-up action here
+                }) {
+                    Text("Sign up")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(customOrange)
+                        .cornerRadius(8)
+                }
+                
+                // Sign in with Google Button
+                Button(action: {
+                    // Handle Google Sign-In action here
+                }) {
+                    HStack {
+                        Image(systemName: "g.circle.fill") // Placeholder for Google G icon
+                            .resizable()
+                            .renderingMode(.template)
+                            .foregroundColor(.red) // Or appropriate Google coloring
+                            .frame(width: 20, height: 20)
+                        
+                        Text("Sign in with Google")
+                            .font(.headline)
+                            .foregroundColor(.black)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+                }
+                
+                // Don't have an account? Sign up
+                HStack(spacing: 4) {
+                    Spacer()
+                    Text("Don't have an account?")
+                        .font(.footnote)
+                        .foregroundColor(.gray)
+                    
+                    Button(action: {
+                        // Handle navigation to create account screen
+                    }) {
+                        Text("Sign up")
+                            .font(.footnote)
+                            .foregroundColor(customOrange)
+                            .fontWeight(.semibold)
+                    }
+                    Spacer()
+                }
+                .padding(.top, 16)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 32)
+            .frame(maxWidth: 450) // Restricts width on larger screens like iPad
+        }
+    }
+}
+
+#Preview {
+    SignInView()
+}
