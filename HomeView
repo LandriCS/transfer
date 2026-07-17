@@ -1,0 +1,68 @@
+// HomeView.swift
+// Main app screen — shown after successful sign-in or sign-up
+// Replace the contents of this file with your real app UI
+ 
+import SwiftUI
+ 
+struct HomeView: View {
+    @EnvironmentObject var appState: AppState
+ 
+    let customOrange = Color(red: 178/255, green: 83/255, blue: 12/255)
+ 
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+ 
+                Spacer()
+ 
+                Image(systemName: "cube.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 64, height: 64)
+                    .foregroundColor(customOrange)
+ 
+                VStack(spacing: 8) {
+                    Text("You're in.")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+ 
+                    if let user = appState.currentUser {
+                        Text("Signed in as \(user.email)")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                }
+ 
+                Text("This is your HomeView placeholder.\nBuild your main app UI here.")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+ 
+                Spacer()
+ 
+                // Sign out — for development convenience
+                Button(action: { appState.signOut() }) {
+                    Text("Sign out")
+                        .font(.headline)
+                        .foregroundColor(customOrange)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(customOrange, lineWidth: 1.5)
+                        )
+                }
+                .padding(.horizontal, 32)
+                .padding(.bottom, 40)
+            }
+            .navigationTitle("TotalSite")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+}
+ 
+#Preview {
+    HomeView()
+        .environmentObject(AppState())
+}
