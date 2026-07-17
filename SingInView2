@@ -1,0 +1,150 @@
+// SignInView.swift
+import SwiftUI
+
+struct SignInView: View {
+    @State private var email = ""
+    @State private var password = ""
+
+    let customOrange = Color(red: 178/255, green: 83/255, blue: 12/255)
+
+    var body: some View {
+        ZStack {
+            Color(UIColor.systemGray6)
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // Top logo bar (sits above the card, flush with screen edges)
+                HStack {
+                    Image(systemName: "cube.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 22, height: 22)
+                        .foregroundColor(customOrange)
+                    Text("TotalSite")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.black)
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 20)
+
+                Spacer()
+
+                // Card
+                VStack(alignment: .leading, spacing: 20) {
+
+                    // Header
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Please enter your details")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                        Text("Welcome back")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .foregroundColor(.black)
+                    }
+
+                    // Input fields
+                    VStack(spacing: 14) {
+                        TextField("Email address", text: $email)
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.gray.opacity(0.25), lineWidth: 1)
+                            )
+                            .textInputAutocapitalization(.never)
+                            .disableAutocorrection(true)
+                            .keyboardType(.emailAddress)
+
+                        SecureField("Password", text: $password)
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.gray.opacity(0.25), lineWidth: 1)
+                            )
+                    }
+
+                    // Forgot password (right-aligned)
+                    HStack {
+                        Spacer()
+                        Button("Forgot password") {
+                            // Handle forgot password
+                        }
+                        .font(.footnote)
+                        .foregroundColor(customOrange)
+                        .fontWeight(.medium)
+                    }
+
+                    // Sign in button
+                    Button(action: {
+                        // Handle sign-in
+                    }) {
+                        Text("Sign in")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(customOrange)
+                            .cornerRadius(8)
+                    }
+
+                    // Sign in with Google
+                    Button(action: {
+                        // Handle Google sign-in
+                    }) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "g.circle.fill")
+                                .resizable()
+                                .renderingMode(.template)
+                                .foregroundColor(.red)
+                                .frame(width: 20, height: 20)
+                            Text("Sign in with Google")
+                                .font(.headline)
+                                .foregroundColor(.black)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.25), lineWidth: 1)
+                        )
+                    }
+
+                    // Don't have an account
+                    HStack(spacing: 4) {
+                        Spacer()
+                        Text("Don't have an account?")
+                            .font(.footnote)
+                            .foregroundColor(.gray)
+                        Button("Sign up") {
+                            // Navigate to create account
+                        }
+                        .font(.footnote)
+                        .foregroundColor(customOrange)
+                        .fontWeight(.semibold)
+                        Spacer()
+                    }
+                    .padding(.top, 4)
+                }
+                .padding(28)
+                .background(Color.white)
+                .cornerRadius(16)
+                .shadow(color: Color.black.opacity(0.07), radius: 12, x: 0, y: 4)
+                .padding(.horizontal, 24)
+                .frame(maxWidth: 480)
+
+                Spacer()
+            }
+        }
+    }
+}
+
+#Preview {
+    SignInView()
+}
