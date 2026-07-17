@@ -1,0 +1,105 @@
+// AccountView.swift
+// User account page — accessible by tapping the user's name in the top-right nav bar
+ 
+import SwiftUI
+ 
+struct AccountView: View {
+    @EnvironmentObject var appState: AppState
+    @Environment(\.dismiss) private var dismiss
+ 
+    let customOrange = Color(red: 178/255, green: 83/255, blue: 12/255)
+ 
+    var body: some View {
+        ZStack {
+            Color(UIColor.systemGray6).ignoresSafeArea()
+ 
+            VStack(spacing: 24) {
+                Spacer()
+ 
+                // Avatar placeholder
+                ZStack {
+                    Circle()
+                        .fill(customOrange.opacity(0.12))
+                        .frame(width: 88, height: 88)
+                    Text(initials)
+                        .font(.system(size: 32, weight: .semibold))
+                        .foregroundColor(customOrange)
+                }
+ 
+                VStack(spacing: 6) {
+                    Text(appState.currentUser?.name ?? "User")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    Text(appState.currentUser?.email ?? "")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                }
+ 
+                // Placeholder info card
+                VStack(alignment: .leading, spacing: 0) {
+                    accountRow(label: "Full name", value: appState.currentUser?.name ?? "—")
+                    Divider().padding(.leading, 16)
+                    accountRow(label: "Email", value: appState.currentUser?.email ?? "—")
+                    Divider().padding(.leading, 16)
+                    accountRow(label: "Role", value: "—")
+                    Divider().padding(.leading, 16)
+                    accountRow(label: "Company", value: "—")
+                }
+                .background(Color.white)
+                .cornerRadius(12)
+                .padding(.horizontal, 24)
+ 
+                Spacer()
+ 
+                // Sign out
+                Button(action: { appState.signOut() }) {
+                    Text("Sign out")
+                        .font(.headline)
+                        .foregroundColor(.red)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white)
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.red.opacity(0.4), lineWidth: 1)
+                        )
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
+            }
+        }
+        .navigationTitle("My Account")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+ 
+    private var initials: String {
+        let parts = (appState.currentUser?.name ?? "?").split(separator: " ")
+        return parts.prefix(2).compactMap { $0.first.map(String.init) }.joined()
+    }
+ 
+    private func accountRow(label: String, value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.subheadline)
+                .foregroundColor(.gray)
+            Spacer()
+            Text(value)
+                .font(.subheadline)
+                .foregroundColor(.black)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+    }
+}
+ 
+#Preview {
+    NavigationStack {
+        AccountView()
+            .environmentObject({
+                let s = AppState()
+                s.signIn(email: "john@example.com", name: "John Smith")
+                return s
+            }())
+    }
+}
