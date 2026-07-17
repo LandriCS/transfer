@@ -1,0 +1,183 @@
+// SignUpView.swift
+// Create a new account screen — pushed from SignInView
+ 
+import SwiftUI
+ 
+struct SignUpView: View {
+    @EnvironmentObject var appState: AppState
+    @Environment(\.dismiss) private var dismiss
+ 
+    @State private var fullName = ""
+    @State private var email = ""
+    @State private var password = ""
+    @State private var confirmPassword = ""
+    @State private var showError = false
+    @State private var errorMessage = ""
+ 
+    let customOrange = Color(red: 178/255, green: 83/255, blue: 12/255)
+ 
+    var body: some View {
+        ZStack {
+            Color(UIColor.systemGray6)
+                .ignoresSafeArea()
+ 
+            VStack(spacing: 0) {
+ 
+                // Logo bar
+                HStack {
+                    Image(systemName: "cube.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 22, height: 22)
+                        .foregroundColor(customOrange)
+                    Text("TotalSite")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.black)
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 20)
+ 
+                Spacer()
+ 
+                // Card
+                VStack(alignment: .leading, spacing: 20) {
+ 
+                    // Header
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Get started for free")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                        Text("Create an account")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .foregroundColor(.black)
+                    }
+ 
+                    // Input fields
+                    VStack(spacing: 14) {
+                        TextField("Full name", text: $fullName)
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.gray.opacity(0.25), lineWidth: 1)
+                            )
+                            .textInputAutocapitalization(.words)
+                            .disableAutocorrection(true)
+ 
+                        TextField("Email address", text: $email)
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.gray.opacity(0.25), lineWidth: 1)
+                            )
+                            .textInputAutocapitalization(.never)
+                            .disableAutocorrection(true)
+                            .keyboardType(.emailAddress)
+ 
+                        SecureField("Password", text: $password)
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.gray.opacity(0.25), lineWidth: 1)
+                            )
+ 
+                        SecureField("Confirm password", text: $confirmPassword)
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(
+                                        confirmPassword.isEmpty ? Color.gray.opacity(0.25) :
+                                        password == confirmPassword ? Color.green.opacity(0.5) : Color.red.opacity(0.5),
+                                        lineWidth: 1
+                                    )
+                            )
+                    }
+ 
+                    // Error message
+                    if showError {
+                        Text(errorMessage)
+                            .font(.footnote)
+                            .foregroundColor(.red)
+                    }
+ 
+                    // Create account button
+                    Button(action: handleSignUp) {
+                        Text("Create account")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(customOrange)
+                            .cornerRadius(8)
+                    }
+ 
+                    // Already have an account
+                    HStack(spacing: 4) {
+                        Spacer()
+                        Text("Already have an account?")
+                            .font(.footnote)
+                            .foregroundColor(.gray)
+                        Button(action: { dismiss() }) {
+                            Text("Sign in")
+                                .font(.footnote)
+                                .foregroundColor(customOrange)
+                                .fontWeight(.semibold)
+                        }
+                        Spacer()
+                    }
+                    .padding(.top, 4)
+                }
+                .padding(28)
+                .background(Color.white)
+                .cornerRadius(16)
+                .shadow(color: Color.black.opacity(0.07), radius: 12, x: 0, y: 4)
+                .padding(.horizontal, 24)
+                .frame(maxWidth: 480)
+ 
+                Spacer()
+            }
+        }
+        .navigationBarHidden(true)
+    }
+ 
+    // MARK: - Validation + Actions
+ 
+    private func handleSignUp() {
+        guard !fullName.isEmpty, !email.isEmpty, !password.isEmpty else {
+            errorMessage = "Please fill in all fields."
+            showError = true
+            return
+        }
+        guard password == confirmPassword else {
+            errorMessage = "Passwords do not match."
+            showError = true
+            return
+        }
+        guard password.count >= 8 else {
+            errorMessage = "Password must be at least 8 characters."
+            showError = true
+            return
+        }
+        showError = false
+ 
+        // TODO: Replace with your real registration API call
+        // On success:
+        appState.signIn(email: email)
+    }
+}
+ 
+#Preview {
+    NavigationStack {
+        SignUpView()
+            .environmentObject(AppState())
+    }
+}
