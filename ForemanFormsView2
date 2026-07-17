@@ -1,0 +1,268 @@
+// ForemanFormsView.swift
+// Foreman portal — Forms tab
+// Contains: form list UI, New Form / Completed toggle, and six stub form destinations
+
+import SwiftUI
+
+// : - Form type definitions
+
+enum ForemanFormType: String, CaseIterable, Identifiable {
+    case accidentReport   = "Accident Report"
+    case safetyMeeting    = "Safety Meeting Form"
+    case yardWorkOrder    = "Yard Work Order"
+    case changeOfAddress  = "Change of Address"
+    case rehireForm       = "Rehire Form"
+    case termSlip         = "Term Slip"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .accidentReport:  return "cross.case"
+        case .safetyMeeting:   return "person.3"
+        case .yardWorkOrder:   return "shippingbox"
+        case .changeOfAddress: return "house"
+        case .rehireForm:      return "arrow.uturn.left.circle"
+        case .termSlip:        return "doc.badge.minus"
+        }
+    }
+}
+
+// : - Forms tab root
+
+struct ForemanFormsView: View {
+    @State private var showingNewForms = true          // toggles New Form / Completed
+    @State private var selectedForm: ForemanFormType? = nil
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+
+                    // Header
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Forms")
+                            .font(.system(size: 26, weight: .bold))
+                        Text("Select a form to begin, or review completed submissions.")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+
+                    // New Form / Completed toggle
+                    HStack(spacing: 0) {
+                        FormsToggleButton(
+                            label: "New Form",
+                            isSelected: showingNewForms,
+                            action: { showingNewForms = true }
+                        )
+                        FormsToggleButton(
+                            label: "Completed",
+                            isSelected: !showingNewForms,
+                            action: { showingNewForms = false }
+                        )
+                    }
+                    .background(Color.white)
+                    .cornerRadius(10)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                    )
+
+                    // Form list or completed placeholder
+                    if showingNewForms {
+                        FormListView(selectedForm: $selectedForm)
+                    } else {
+                        CompletedFormsPlaceholder()
+                    }
+                }
+                .padding(28)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(Color(UIColor.systemGray6))
+            // Navigate to the selected form stub
+            .navigationDestination(item: $selectedForm) { formType in
+                formDestination(for: formType)
+            }
+            .navigationBarHidden(true)
+        }
+    }
+
+    // : - Route to correct stub
+
+    @ViewBuilder
+    private func formDestination(for type: ForemanFormType) -> some View {
+        switch type {
+        case .accidentReport:  AccidentReportFormView()
+        case .safetyMeeting:   SafetyMeetingFormView()
+        case .yardWorkOrder:   YardWorkOrderFormView()
+        case .changeOfAddress: ChangeOfAddressFormView()
+        case .rehireForm:      RehireFormView()
+        case .termSlip:        TermSlipFormView()
+        }
+    }
+}
+
+// : - Toggle button
+
+private struct FormsToggleButton: View {
+    let label: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 15, weight: isSelected ? .semibold : .regular))
+                .foregroundColor(isSelected ? .black : .gray)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 9)
+                        .fill(isSelected ? Color.white : Color.clear)
+                        .shadow(color: isSelected ? Color.black.opacity(0.08) : .clear,
+                                radius: 4, x: 0, y: 1)
+                )
+                .padding(3)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// : - Form list (New Form tab)
+
+private struct FormListView: View {
+    @Binding var selectedForm: ForemanFormType?
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(ForemanFormType.allCases.enumerated()), id: \.element) { index, formType in
+                Button(action: { selectedForm = formType }) {
+                    HStack {
+                        Text(formType.rawValue)
+                            .font(.system(size: 16))
+                            .foregroundColor(.black)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 18)
+                }
+                .buttonStyle(.plain)
+
+                // Divider between rows, not after last
+                if index < ForemanFormType.allCases.count - 1 {
+                    Divider()
+                        .padding(.horizontal, 20)
+                }
+            }
+        }
+        .background(Color.white)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.gray.opacity(0.18), lineWidth: 1)
+        )
+    }
+}
+
+// : - Completed forms placeholder
+
+private struct CompletedFormsPlaceholder: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            Spacer().frame(height: 40)
+            Image(systemName: "tray")
+                .font(.system(size: 40))
+                .foregroundColor(.gray.opacity(0.35))
+            Text("No completed forms yet.")
+                .font(.subheadline)
+                .foregroundColor(.gray)
+            Spacer().frame(height: 40)
+        }
+        .frame(maxWidth: .infinity)
+        .background(Color.white)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.gray.opacity(0.18), lineWidth: 1)
+        )
+    }
+}
+
+// : - Shared form stub shell
+
+private struct FormStubShell: View {
+    let title: String
+    let icon: String
+    @Environment(\.dismiss) private var dismiss
+
+    let customOrange = Color(red: 178/255, green: 83/255, blue: 12/255)
+
+    var body: some View {
+        ZStack {
+            Color(UIColor.systemGray6).ignoresSafeArea()
+            VStack(spacing: 20) {
+                Spacer()
+                Image(systemName: icon)
+                    .font(.system(size: 52))
+                    .foregroundColor(customOrange.opacity(0.7))
+                Text(title)
+                    .font(.title2).fontWeight(.bold)
+                Text("This form is under construction.\nFields and submission logic go here.")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
+                Spacer()
+            }
+            .padding(32)
+        }
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// : - Six form stubs (one per form — expand each individually later)
+
+struct AccidentReportFormView: View {
+    var body: some View {
+        FormStubShell(title: "Accident Report", icon: "cross.case")
+    }
+}
+
+struct SafetyMeetingFormView: View {
+    var body: some View {
+        FormStubShell(title: "Safety Meeting Form", icon: "person.3")
+    }
+}
+
+struct YardWorkOrderFormView: View {
+    var body: some View {
+        FormStubShell(title: "Yard Work Order", icon: "shippingbox")
+    }
+}
+
+struct ChangeOfAddressFormView: View {
+    var body: some View {
+        FormStubShell(title: "Change of Address", icon: "house")
+    }
+}
+
+struct RehireFormView: View {
+    var body: some View {
+        FormStubShell(title: "Rehire Form", icon: "arrow.uturn.left.circle")
+    }
+}
+
+struct TermSlipFormView: View {
+    var body: some View {
+        FormStubShell(title: "Term Slip", icon: "doc.badge.minus")
+    }
+}
+
+// : - Preview
+
+#Preview {
+    ForemanFormsView()
+}
