@@ -1,0 +1,224 @@
+// HomeView.swift
+// Home screen shown after sign-in — user selects their role portal
+ 
+import SwiftUI
+ 
+// MARK: - Role Model
+ 
+enum UserRole {
+    case executive
+    case projectManager
+    case foreman
+}
+ 
+struct RoleCard {
+    let role: UserRole
+    let title: String
+    let badge: String
+    let description: String
+    let icon: String
+}
+ 
+// MARK: - HomeView
+ 
+struct HomeView: View {
+    @EnvironmentObject var appState: AppState
+ 
+    @State private var homeRefreshID = UUID()
+ 
+    let customOrange = Color(red: 178/255, green: 83/255, blue: 12/255)
+ 
+    let roles: [RoleCard] = [
+        RoleCard(
+            role: .executive,
+            title: "Executive",
+            badge: "MANAGEMENT",
+            description: "Create and configure new projects, set contract values, and assign job numbers before handing off to the project manager.",
+            icon: "square.grid.2x2"
+        ),
+        RoleCard(
+            role: .projectManager,
+            title: "Project Manager",
+            badge: "OFFICE",
+            description: "Manage projects, review invoices, track change orders, and monitor field submissions from your team.",
+            icon: "clipboard"
+        ),
+        RoleCard(
+            role: .foreman,
+            title: "Foreman",
+            badge: "FIELD",
+            description: "Open and close your day, submit daily reports, log hours, and raise tickets from the job site.",
+            icon: "person.badge.shield.checkmark"
+        )
+    ]
+ 
+    var body: some View {
+        NavigationStack {
+            ZStack(alignment: .top) {
+                Color.white.ignoresSafeArea()
+ 
+                VStack(spacing: 0) {
+ 
+                    // ── Top nav bar ──────────────────────────────────────
+                    HStack {
+                        // Logo + name — tapping refreshes home
+                        Button(action: {
+                            homeRefreshID = UUID()
+                        }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "house.fill")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 22, height: 22)
+                                    .foregroundColor(customOrange)
+                                Text("TotalSite")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(.black)
+                            }
+                        }
+                        .buttonStyle(.plain)
+ 
+                        Spacer()
+ 
+                        // User name — tapping opens account page
+                        NavigationLink(destination: AccountView()) {
+                            Text(appState.currentUser?.name ?? "Account")
+                                .font(.system(size: 15))
+                                .foregroundColor(.black)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 18)
+                    .overlay(Divider(), alignment: .bottom)
+ 
+                    // ── Scrollable body ──────────────────────────────────
+                    ScrollView {
+                        VStack(spacing: 32) {
+ 
+                            // Header
+                            VStack(spacing: 8) {
+                                Text("Welcome to TotalSite")
+                                    .font(.system(size: 28, weight: .bold))
+                                    .foregroundColor(.black)
+                                Text("Select your role to continue to your portal.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(.top, 40)
+ 
+                            // Role cards
+                            VStack(spacing: 16) {
+                                ForEach(roles, id: \.title) { card in
+                                    NavigationLink(destination: portalDestination(for: card.role)) {
+                                        RoleCardView(card: card)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.horizontal, 28)
+                            .frame(maxWidth: 600)
+ 
+                            // Footer
+                            Text("This is a demo; no real data.")
+                                .font(.footnote)
+                                .foregroundColor(Color.gray.opacity(0.5))
+                                .padding(.bottom, 48)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .id(homeRefreshID)
+                    }
+                }
+            }
+            .navigationBarHidden(true)
+        }
+    }
+ 
+    // MARK: - Portal routing
+ 
+    @ViewBuilder
+    private func portalDestination(for role: UserRole) -> some View {
+        switch role {
+        case .executive:
+            ExecutivePortalView()
+        case .projectManager:
+            ProjectManagerPortalView()
+        case .foreman:
+            ForemanPortalView()
+        }
+    }
+}
+ 
+// MARK: - Role Card Subview
+ 
+struct RoleCardView: View {
+    let card: RoleCard
+ 
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+ 
+            // Icon tile
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(UIColor.systemGray6))
+                    .frame(width: 56, height: 56)
+                Image(systemName: card.icon)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 26, height: 26)
+                    .foregroundColor(.black)
+            }
+ 
+            // Title + badge
+            HStack(alignment: .center, spacing: 10) {
+                Text(card.title)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.black)
+                Text(card.badge)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(.gray)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.gray.opacity(0.35), lineWidth: 1)
+                    )
+            }
+ 
+            // Description
+            Text(card.description)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+ 
+            // Enter portal
+            HStack(spacing: 5) {
+                Text("Enter portal")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.black)
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.black)
+            }
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white)
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+        )
+    }
+}
+ 
+// MARK: - Preview
+ 
+#Preview {
+    HomeView()
+        .environmentObject({
+            let s = AppState()
+            s.signIn(email: "john@example.com", name: "John Smith")
+            return s
+        }())
+}
