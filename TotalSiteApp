@@ -1,0 +1,16 @@
+// TotalSiteApp.swift
+// App entry point — owns AppState and decides which root view to show
+ 
+import SwiftUI
+ 
+@main
+struct TotalSiteApp: App {
+    @StateObject private var appState = AppState()
+ 
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+                .environmentObject(appState)
+        }
+    }
+}
