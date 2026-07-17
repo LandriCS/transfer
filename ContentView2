@@ -1,0 +1,20 @@
+// ContentView.swift
+// Root router — switches between auth flow and main app based on AppState
+ 
+import SwiftUI
+ 
+struct ContentView: View {
+    @EnvironmentObject var appState: AppState
+ 
+    var body: some View {
+        if appState.isAuthenticated {
+            HomeView()
+        } else {
+            // NavigationStack lives here so it wraps the entire auth flow:
+            // SignInView → SignUpView, ForgotPasswordView
+            NavigationStack {
+                SignInView()
+            }
+        }
+    }
+}
