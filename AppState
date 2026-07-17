@@ -1,0 +1,24 @@
+// AppState.swift
+// Global authentication state — injected as an environment object throughout the app
+ 
+import SwiftUI
+ 
+class AppState: ObservableObject {
+    @Published var isAuthenticated: Bool = false
+    @Published var currentUser: User? = nil
+ 
+    func signIn(email: String, name: String = "") {
+        currentUser = User(email: email, name: name.isEmpty ? email : name)
+        isAuthenticated = true
+    }
+ 
+    func signOut() {
+        currentUser = nil
+        isAuthenticated = false
+    }
+}
+ 
+struct User {
+    let email: String
+    let name: String
+}
