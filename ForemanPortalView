@@ -1,0 +1,381 @@
+// ForemanPortalView.swift
+// Foreman portal — dashboard with sidebar nav, stats, Open Day CTA, Recent Activity
+
+import SwiftUI
+
+// MARK: - Sample Data Models (replace with real data later)
+
+struct JobLocation: Identifiable, Hashable {
+    let id = UUID()
+    let name: String
+    let jobCode: String
+}
+
+// - Foreman Portal
+
+struct ForemanPortalView: View {
+    @EnvironmentObject var appState: AppState
+
+    // Selected job location from dropdown
+    @State private var selectedLocation: JobLocation = sampleLocations[0]
+    @State private var showLocationPicker = false
+
+    // Sidebar selection
+    @State private var sidebarSelection: ForemanTab = .dashboard
+
+    // Navigation flags
+    @State private var navigateToOpenDay = false
+
+    let customOrange = Color(red: 178/255, green: 83/255, blue: 12/255)
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+
+                // ── Top nav bar ──────────────────────────────────────────
+                HStack(spacing: 0) {
+
+                    // TotalSite logo — goes back to HomeView
+                    NavigationLink(destination: HomeView()) {
+                        HStack(spacing: 7) {
+                            Image(systemName: "house.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                                .foregroundColor(customOrange)
+                            Text("TotalSite")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.black)
+                        }
+                    }
+                    .buttonStyle(.plain)
+
+                    // Chevron separator
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.gray)
+                        .padding(.horizontal, 8)
+
+                    // Location dropdown
+                    Button(action: { showLocationPicker.toggle() }) {
+                        HStack(spacing: 5) {
+                            Text(selectedLocation.name)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.black)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                                .frame(maxWidth: 200, alignment: .leading)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.system(size: 11))
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .confirmationDialog("Select Location", isPresented: $showLocationPicker, titleVisibility: .visible) {
+                        ForEach(sampleLocations) { loc in
+                            Button(loc.name) { selectedLocation = loc }
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    }
+
+                    Spacer()
+
+                    // User name — goes to AccountView
+                    NavigationLink(destination: AccountView()) {
+                        Text(appState.currentUser?.name ?? "Account")
+                            .font(.system(size: 14))
+                            .foregroundColor(.black)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+                .background(Color.white)
+                .overlay(Divider(), alignment: .bottom)
+
+                // ── Main content: sidebar + body ─────────────────────────
+                HStack(spacing: 0) {
+
+                    // Sidebar
+                    ForemanSidebar(selection: $sidebarSelection)
+
+                    Divider()
+
+                    // Content area
+                    Group {
+                        switch sidebarSelection {
+                        case .dashboard:
+                            ForemanDashboardBody(
+                                location: selectedLocation,
+                                navigateToOpenDay: $navigateToOpenDay
+                            )
+                        case .tickets:
+                            ForemanPlaceholderBody(title: "Tickets")
+                        case .crew:
+                            ForemanPlaceholderBody(title: "Crew")
+                        case .forms:
+                            ForemanFormsView()
+                        case .profile:
+                            ForemanPlaceholderBody(title: "Profile")
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+            // Navigate into Open Day portal when button is tapped
+            .navigationDestination(isPresented: $navigateToOpenDay) {
+                OpenDayView(location: selectedLocation)
+            }
+            .navigationBarHidden(true)
+        }
+    }
+}
+
+// MARK: - Sidebar Tabs
+
+enum ForemanTab: String, CaseIterable {
+    case dashboard = "Dashboard"
+    case tickets   = "Tickets"
+    case crew      = "Crew"
+    case forms     = "Forms"
+    case profile   = "Profile"
+
+    var icon: String {
+        switch self {
+        case .dashboard: return "square.grid.2x2"
+        case .tickets:   return "ticket"
+        case .crew:      return "person.3"
+        case .forms:     return "doc.text"
+        case .profile:   return "person.circle"
+        }
+    }
+}
+
+struct ForemanSidebar: View {
+    @Binding var selection: ForemanTab
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(ForemanTab.allCases, id: \.self) { tab in
+                Button(action: { selection = tab }) {
+                    HStack(spacing: 10) {
+                        Image(systemName: tab.icon)
+                            .frame(width: 18)
+                        Text(tab.rawValue)
+                            .font(.system(size: 15))
+                    }
+                    .foregroundColor(selection == tab ? .black : .gray)
+                    .fontWeight(selection == tab ? .semibold : .regular)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(selection == tab ? Color(UIColor.systemGray5) : Color.clear)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer()
+        }
+        .padding(.top, 16)
+        .padding(.horizontal, 8)
+        .frame(width: 200)
+        .background(Color(UIColor.systemGray6))
+    }
+}
+
+// MARK: - Dashboard body
+
+struct ForemanDashboardBody: View {
+    let location: JobLocation
+    @Binding var navigateToOpenDay: Bool
+
+    let customOrange = Color(red: 178/255, green: 83/255, blue: 12/255)
+
+    // Placeholder stats — wire to real data later
+    let crewOnJob   = 9
+    let openTickets = 4
+    let percentDone = 42
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+
+                // Job title + code
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(location.name)
+                        .font(.system(size: 24, weight: .bold))
+                    HStack(spacing: 6) {
+                        Text(location.jobCode)
+                            .font(.system(size: 13))
+                            .foregroundColor(.gray)
+                        Button(action: {
+                            UIPasteboard.general.string = location.jobCode
+                        }) {
+                            Image(systemName: "doc.on.doc")
+                                .font(.system(size: 12))
+                                .foregroundColor(.gray)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                // Stat cards
+                HStack(spacing: 12) {
+                    StatCard(icon: "person.2", label: "CREW ON JOB",    value: "\(crewOnJob)")
+                    StatCard(icon: "ticket",   label: "OPEN TICKETS",   value: "\(openTickets)")
+                    StatCard(icon: "circle.dotted.circle", label: "PERCENTAGE DONE", value: "\(percentDone)%")
+                }
+
+                // Open Day button
+                Button(action: { navigateToOpenDay = true }) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "sun.max")
+                            .font(.system(size: 18))
+                        Text("Open Day")
+                            .font(.system(size: 18, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 18)
+                    .background(customOrange)
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+
+                // Recent Activity card
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Recent Activity")
+                        .font(.system(size: 16, weight: .semibold))
+
+                    // Empty state — replace with real activity feed later
+                    VStack(spacing: 12) {
+                        Image(systemName: "cone.fill")
+                            .font(.system(size: 48))
+                            .foregroundColor(customOrange.opacity(0.6))
+                        Text("WORK IN PROGRESS")
+                            .font(.system(size: 13, weight: .heavy))
+                            .foregroundColor(.black.opacity(0.7))
+                            .tracking(1)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 48)
+                }
+                .padding(20)
+                .background(Color.white)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.gray.opacity(0.18), lineWidth: 1)
+                )
+            }
+            .padding(28)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(Color(UIColor.systemGray6))
+    }
+}
+
+// MARK: - Stat card
+
+struct StatCard: View {
+    let icon: String
+    let label: String
+    let value: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 13))
+                    .foregroundColor(.gray)
+                Text(label)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.gray)
+            }
+            Text(value)
+                .font(.system(size: 26, weight: .bold))
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white)
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.gray.opacity(0.18), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Generic placeholder for sidebar sections not yet built
+
+struct ForemanPlaceholderBody: View {
+    let title: String
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            Image(systemName: "hammer.circle")
+                .font(.system(size: 48))
+                .foregroundColor(.gray.opacity(0.35))
+            Text(title)
+                .font(.title3).fontWeight(.semibold)
+            Text("This section is under construction.\nAdd your views here.")
+                .font(.subheadline).foregroundColor(.gray)
+                .multilineTextAlignment(.center)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(UIColor.systemGray6))
+    }
+}
+
+// MARK: - Open Day destination (stub — fill in later)
+
+struct OpenDayView: View {
+    let location: JobLocation
+    @Environment(\.dismiss) private var dismiss
+
+    let customOrange = Color(red: 178/255, green: 83/255, blue: 12/255)
+
+    var body: some View {
+        ZStack {
+            Color(UIColor.systemGray6).ignoresSafeArea()
+            VStack(spacing: 20) {
+                Spacer()
+                Image(systemName: "sun.max.fill")
+                    .font(.system(size: 52))
+                    .foregroundColor(customOrange)
+                Text("Open Day")
+                    .font(.largeTitle).fontWeight(.bold)
+                Text(location.name)
+                    .font(.subheadline).foregroundColor(.gray)
+                Text("Build your Open Day workflow here.")
+                    .font(.body).foregroundColor(.secondary)
+                Spacer()
+            }
+        }
+        .navigationTitle("Open Day")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// MARK: - Sample data
+
+let sampleLocations: [JobLocation] = [
+    JobLocation(name: "Riverside Office - Limestone Facade", jobCode: "gbkcwfonsvapsmytohwx"),
+    JobLocation(name: "Downtown Tower - Lobby Renovation",  jobCode: "xptqmrelvhdwncabsfuy"),
+    JobLocation(name: "Harbor Bridge - Structural Repair",  jobCode: "wnbqdzoyuimcktrlephf"),
+]
+
+// MARK: - Preview
+
+#Preview {
+    ForemanPortalView()
+        .environmentObject({
+            let s = AppState()
+            s.signIn(email: "mike@example.com", name: "Mike Torres")
+            return s
+        }())
+}
