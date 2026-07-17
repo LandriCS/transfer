@@ -1,0 +1,564 @@
+// ProjectManagerPortalView.swift
+// Project Manager portal — Projects (default), Manpower, Rates
+ 
+import SwiftUI
+ 
+// : - Data Models
+ 
+enum ProjectStatus: String, CaseIterable {
+    case active   = "Active"
+    case paused   = "Paused"
+    case complete = "Complete"
+ 
+    var color: Color {
+        switch self {
+        case .active:   return Color(red: 178/255, green: 83/255, blue: 12/255)
+        case .paused:   return .gray
+        case .complete: return .green
+        }
+    }
+}
+ 
+struct Project: Identifiable {
+    let id = UUID()
+    let name: String
+    let jobNumber: String
+    let foreman: String
+    let status: ProjectStatus
+    let crew: Int
+    let percentComplete: Double  // 0.0 – 1.0
+    let contractValue: Double    // in dollars
+}
+ 
+// : - Sample Data (replace with real backend data)
+ 
+let sampleProjects: [Project] = [
+    Project(name: "Test 1", jobNumber: "JOB-0007", foreman: "steve",
+            status: .active, crew: 20, percentComplete: 0.0,  contractValue: 5_000_000),
+    Project(name: "test 2", jobNumber: "JOB-0008", foreman: "test c 2",
+            status: .active, crew: 10, percentComplete: 0.0,  contractValue: 1_500_000),
+    Project(name: "Test 3", jobNumber: "JOB-0009", foreman: "Test C 3",
+            status: .active, crew:  9, percentComplete: 0.0,  contractValue:   160_000),
+]
+ 
+// : - PM Tab
+ 
+enum PMTab: String, CaseIterable {
+    case projects  = "Projects"
+    case manpower  = "Manpower"
+    case rates     = "Rates"
+}
+ 
+// : - ProjectManagerPortalView
+ 
+struct ProjectManagerPortalView: View {
+    @EnvironmentObject var appState: AppState
+ 
+    @State private var selectedTab: PMTab = .projects
+    @State private var selectedProject: Project? = nil
+ 
+    let customOrange = Color(red: 178/255, green: 83/255, blue: 12/255)
+ 
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+ 
+                // ── Top nav bar ──────────────────────────────────────────
+                HStack {
+                    // TotalSite → HomeView
+                    NavigationLink(destination: HomeView()) {
+                        HStack(spacing: 7) {
+                            Image(systemName: "house.fill")
+                                .resizable().scaledToFit()
+                                .frame(width: 20, height: 20)
+                                .foregroundColor(customOrange)
+                            Text("TotalSite")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.black)
+                        }
+                    }
+                    .buttonStyle(.plain)
+ 
+                    Spacer()
+ 
+                    // Centre tab switcher
+                    HStack(spacing: 0) {
+                        ForEach(PMTab.allCases, id: \.self) { tab in
+                            Button(action: { selectedTab = tab }) {
+                                Text(tab.rawValue)
+                                    .font(.system(size: 14,
+                                                  weight: selectedTab == tab ? .semibold : .regular))
+                                    .foregroundColor(selectedTab == tab ? .black : .gray)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 7)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 7)
+                                            .fill(selectedTab == tab
+                                                  ? Color(UIColor.systemGray5)
+                                                  : Color.clear)
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+ 
+                    Spacer()
+ 
+                    // User name → AccountView
+                    NavigationLink(destination: AccountView()) {
+                        Text(appState.currentUser?.name ?? "Account")
+                            .font(.system(size: 14))
+                            .foregroundColor(.black)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 14)
+                .background(Color.white)
+                .overlay(Divider(), alignment: .bottom)
+ 
+                // ── Tab content ──────────────────────────────────────────
+                Group {
+                    switch selectedTab {
+                    case .projects:
+                        PMProjectsView(selectedProject: $selectedProject)
+                    case .manpower:
+                        PMPlaceholderView(title: "Manpower")
+                    case .rates:
+                        PMPlaceholderView(title: "Rates")
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            // Navigate to individual project page when a row is tapped
+            .navigationDestination(item: $selectedProject) { project in
+                ProjectDetailView(project: project)
+            }
+            .navigationBarHidden(true)
+        }
+    }
+}
+ 
+// : - Projects tab
+ 
+struct PMProjectsView: View {
+    @Binding var selectedProject: Project?
+    @EnvironmentObject var appState: AppState
+ 
+    @State private var searchText  = ""
+    @State private var statusFilter: ProjectStatus? = .active   // nil = All
+    @State private var sortNewestFirst = true
+ 
+    let customOrange = Color(red: 178/255, green: 83/255, blue: 12/255)
+ 
+    // Greeting based on time of day
+    private var greeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 0..<12: return "Good morning"
+        case 12..<17: return "Good afternoon"
+        default:     return "Good evening"
+        }
+    }
+ 
+    private var firstName: String {
+        appState.currentUser?.name.components(separatedBy: " ").first ?? "there"
+    }
+ 
+    // Filtered + sorted project list
+    private var filteredProjects: [Project] {
+        var list = sampleProjects
+ 
+        if !searchText.isEmpty {
+            list = list.filter {
+                $0.name.localizedCaseInsensitiveContains(searchText) ||
+                $0.jobNumber.localizedCaseInsensitiveContains(searchText) ||
+                $0.foreman.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+ 
+        if let filter = statusFilter {
+            list = list.filter { $0.status == filter }
+        }
+ 
+        // Sort — newest first is just reversed array order for sample data;
+        // wire to a real date field when you have one
+        return sortNewestFirst ? list.reversed() : list
+    }
+ 
+    // Summary stats
+    private var totalContract: Double { sampleProjects.map(\.contractValue).reduce(0, +) }
+    private var activeProjects: [Project] { sampleProjects.filter { $0.status == .active } }
+    private var totalCrew: Int { sampleProjects.map(\.crew).reduce(0, +) }
+ 
+    var body: some View {
+        HStack(spacing: 0) {
+ 
+            // ── Left: project list ───────────────────────────────────────
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+ 
+                    // Greeting
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("\(greeting), \(firstName)")
+                            .font(.system(size: 22, weight: .bold))
+                        Text("Here's where your jobs stand today")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+ 
+                    // Search bar
+                    HStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.gray)
+                        TextField("Search for a project", text: $searchText)
+                            .font(.system(size: 14))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(Color.white)
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.gray.opacity(0.25), lineWidth: 1)
+                    )
+ 
+                    // Sort + filter bar
+                    HStack(spacing: 16) {
+                        Button(action: { sortNewestFirst.toggle() }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.up.arrow.down")
+                                    .font(.system(size: 12))
+                                Text(sortNewestFirst ? "Newest first" : "Oldest first")
+                                    .font(.system(size: 13))
+                            }
+                            .foregroundColor(.gray)
+                        }
+                        .buttonStyle(.plain)
+ 
+                        Divider().frame(height: 16)
+ 
+                        // Status filter chips
+                        Button(action: { statusFilter = nil }) {
+                            Text("All")
+                                .font(.system(size: 13,
+                                              weight: statusFilter == nil ? .semibold : .regular))
+                                .foregroundColor(statusFilter == nil ? .black : .gray)
+                        }
+                        .buttonStyle(.plain)
+ 
+                        ForEach(ProjectStatus.allCases, id: \.self) { status in
+                            Button(action: { statusFilter = status }) {
+                                Text(status.rawValue)
+                                    .font(.system(size: 13,
+                                                  weight: statusFilter == status ? .semibold : .regular))
+                                    .foregroundColor(statusFilter == status ? .black : .gray)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+ 
+                    // Column headers
+                    HStack {
+                        Text("PROJECT")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Text("STATUS").frame(width: 90, alignment: .leading)
+                        Text("CREW").frame(width: 60, alignment: .leading)
+                        Text("% COMPLETE").frame(width: 130, alignment: .leading)
+                        Text("CONTRACT").frame(width: 80, alignment: .trailing)
+                    }
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.gray)
+                    .padding(.horizontal, 16)
+ 
+                    // Project rows
+                    if filteredProjects.isEmpty {
+                        Text("No projects match your search.")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                            .padding(.top, 24)
+                    } else {
+                        VStack(spacing: 8) {
+                            ForEach(filteredProjects) { project in
+                                Button(action: { selectedProject = project }) {
+                                    ProjectRow(project: project)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+                .padding(24)
+            }
+            .background(Color(UIColor.systemGray6))
+            .frame(maxWidth: .infinity)
+ 
+            // ── Right: summary panel ─────────────────────────────────────
+            PMSummaryPanel(
+                totalContract: totalContract,
+                activeProjects: activeProjects.count,
+                totalCrew: totalCrew,
+                openTickets: 0,
+                newForms: 0
+            )
+            .frame(width: 280)
+        }
+    }
+}
+ 
+// : - Project row
+ 
+struct ProjectRow: View {
+    let project: Project
+ 
+    var body: some View {
+        HStack {
+            // Name + job number
+            VStack(alignment: .leading, spacing: 3) {
+                Text(project.name)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.black)
+                HStack(spacing: 6) {
+                    Text(project.jobNumber)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.gray)
+                    Text(project.foreman)
+                        .font(.system(size: 11))
+                        .foregroundColor(.gray)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+ 
+            // Status
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(project.status.color)
+                    .frame(width: 7, height: 7)
+                Text(project.status.rawValue.uppercased())
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(project.status.color)
+            }
+            .frame(width: 90, alignment: .leading)
+ 
+            // Crew
+            HStack(spacing: 4) {
+                Image(systemName: "person.2")
+                    .font(.system(size: 11))
+                    .foregroundColor(.gray)
+                Text("\(project.crew)")
+                    .font(.system(size: 13))
+                    .foregroundColor(.black)
+            }
+            .frame(width: 60, alignment: .leading)
+ 
+            // Progress bar + %
+            HStack(spacing: 8) {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(height: 6)
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color(red: 178/255, green: 83/255, blue: 12/255))
+                            .frame(width: geo.size.width * project.percentComplete, height: 6)
+                    }
+                }
+                .frame(width: 80, height: 6)
+                Text("\(Int(project.percentComplete * 100))%")
+                    .font(.system(size: 12))
+                    .foregroundColor(.gray)
+                    .frame(width: 36, alignment: .trailing)
+            }
+            .frame(width: 130, alignment: .leading)
+ 
+            // Contract value
+            Text(formatContractValue(project.contractValue))
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.black)
+                .frame(width: 80, alignment: .trailing)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(Color.white)
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+        )
+    }
+ 
+    private func formatContractValue(_ value: Double) -> String {
+        switch value {
+        case 1_000_000...: return "$\(String(format: "%.1f", value / 1_000_000))M"
+        case 1_000...:     return "$\(Int(value / 1_000))K"
+        default:           return "$\(Int(value))"
+        }
+    }
+}
+ 
+// : - Summary panel (right sidebar)
+ 
+struct PMSummaryPanel: View {
+    let totalContract: Double
+    let activeProjects: Int
+    let totalCrew: Int
+    let openTickets: Int
+    let newForms: Int
+ 
+    let customOrange = Color(red: 178/255, green: 83/255, blue: 12/255)
+ 
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+ 
+                // Total contract value
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "dollarsign")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.gray)
+                        Text("TOTAL CONTRACT VALUE")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.gray)
+                    }
+                    Text("$\(formatLarge(totalContract))")
+                        .font(.system(size: 28, weight: .bold))
+ 
+                    // Progress bar (active vs complete — all active for now)
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(customOrange)
+                        .frame(height: 5)
+ 
+                    HStack {
+                        HStack(spacing: 5) {
+                            Circle().fill(customOrange).frame(width: 8, height: 8)
+                            Text("Active")
+                                .font(.system(size: 12))
+                        }
+                        Spacer()
+                        Text("$\(formatLarge(totalContract))")
+                            .font(.system(size: 12))
+                    }
+                    HStack {
+                        HStack(spacing: 5) {
+                            Circle().fill(Color.gray.opacity(0.4)).frame(width: 8, height: 8)
+                            Text("Complete")
+                                .font(.system(size: 12))
+                        }
+                        Spacer()
+                        Text("$0")
+                            .font(.system(size: 12))
+                    }
+                }
+ 
+                Divider()
+ 
+                // Stats grid
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                    PMStatCell(icon: "waveform.path", value: "\(activeProjects)", label: "Active jobs")
+                    PMStatCell(icon: "person.2",      value: "\(totalCrew)",      label: "Total crew")
+                    PMStatCell(icon: "waveform.path", value: "\(openTickets)",    label: "Open tickets")
+                    PMStatCell(icon: "doc",           value: "\(newForms)",       label: "New forms")
+                }
+            }
+            .padding(20)
+        }
+        .background(Color.white)
+        .overlay(
+            Rectangle()
+                .fill(Color.gray.opacity(0.15))
+                .frame(width: 1),
+            alignment: .leading
+        )
+    }
+ 
+    private func formatLarge(_ value: Double) -> String {
+        switch value {
+        case 1_000_000...: return String(format: "%.1fM", value / 1_000_000)
+        case 1_000...:     return String(format: "%.0fK", value / 1_000)
+        default:           return String(format: "%.0f", value)
+        }
+    }
+}
+ 
+struct PMStatCell: View {
+    let icon: String
+    let value: String
+    let label: String
+ 
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundColor(.gray)
+            Text(value)
+                .font(.system(size: 26, weight: .bold))
+            Text(label)
+                .font(.system(size: 12))
+                .foregroundColor(.gray)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+ 
+// : - Placeholder tabs
+ 
+struct PMPlaceholderView: View {
+    let title: String
+    var body: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            Image(systemName: "hammer.circle")
+                .font(.system(size: 48))
+                .foregroundColor(.gray.opacity(0.3))
+            Text(title)
+                .font(.title3).fontWeight(.semibold)
+            Text("This section is under construction.")
+                .font(.subheadline).foregroundColor(.gray)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(UIColor.systemGray6))
+    }
+}
+ 
+// : - Project detail (stub — wire up later)
+ 
+struct ProjectDetailView: View {
+    let project: Project
+    @Environment(\.dismiss) private var dismiss
+ 
+    let customOrange = Color(red: 178/255, green: 83/255, blue: 12/255)
+ 
+    var body: some View {
+        ZStack {
+            Color(UIColor.systemGray6).ignoresSafeArea()
+            VStack(spacing: 20) {
+                Spacer()
+                Image(systemName: "folder.fill")
+                    .font(.system(size: 52))
+                    .foregroundColor(customOrange)
+                Text(project.name)
+                    .font(.largeTitle).fontWeight(.bold)
+                Text(project.jobNumber)
+                    .font(.subheadline).foregroundColor(.gray)
+                Text("Build this project's detail view here.")
+                    .font(.body).foregroundColor(.secondary)
+                Spacer()
+            }
+        }
+        .navigationTitle(project.name)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+ 
+// : - Preview
+ 
+#Preview {
+    ProjectManagerPortalView()
+        .environmentObject({
+            let s = AppState()
+            s.signIn(email: "john@example.com", name: "John Smith")
+            return s
+        }())
+}
